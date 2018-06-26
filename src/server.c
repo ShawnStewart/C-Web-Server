@@ -192,6 +192,24 @@ int send_response(int fd, char *header, char *content_type, char *body)
   int response_length; // Total length of header plus body
 
   // !!!!  IMPLEMENT ME
+  char *timeStr;
+  time_t currentTime = time(NULL);
+  timeStr = ctime(&currentTime);
+
+  int content_length = strlen(body);
+
+  sprintf(response,
+    "%s\n"
+    "Date: %s"
+    "Connection: close\n"
+    "content-Length: %d\n"
+    "Content-Type: %s\n"
+    "\n" // End of HTTP HEADER
+    "%s\n",
+    header, timeStr, content_length, content_type, body
+  );
+
+  response_length = strlen(response);
 
   // Send it all!
   int rv = send(fd, response, response_length, 0);
@@ -219,6 +237,7 @@ void get_root(int fd)
 {
   // !!!! IMPLEMENT ME
   //send_response(...
+  send_response(fd, "HTTP/1.1 200 OK", "text/html", "<div>Hello World!</div>");
 }
 
 /**
@@ -287,12 +306,29 @@ void handle_http_request(int fd)
   // !!!! IMPLEMENT ME
   // Get the request type and path from the first line
   // Hint: sscanf()!
-
+  sscanf(request, "%s %s %s", request_type, request_path, request_protocol);
+  
   // !!!! IMPLEMENT ME (stretch goal)
   // find_start_of_body()
 
   // !!!! IMPLEMENT ME
   // call the appropriate handler functions, above, with the incoming data
+  printf("REQUEST: %s %s %s\n", request_type, request_path, request_protocol);
+
+  if (strcmp(request_type, "GET") == 0) {
+    if (strcmp(request_path, "/") == 0) {
+      get_root(fd);
+    } else if (strcmp(request_path, "/d20") == 0) {
+      get_d20(fd);
+    } else if (strcmp(request_path, "date") == 0) {
+      get_date(fd);
+    } else {
+      resp_404(fd);
+    }
+  } else {
+    fprintf(stderr, "Unimplemented request type %s\n", request_type);
+    return;
+  }
 }
 
 /**
